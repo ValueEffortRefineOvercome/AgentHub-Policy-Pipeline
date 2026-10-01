@@ -15,6 +15,29 @@ deploy 없음 — 배포 대상 없음
 
 `uv` 가 없으면 `python -m` 으로 바꾼다 (`python -m ruff`, `python -m pytest`).
 
+`python` 이 빈 버전을 반환하거나 venv 경로가 OS 마다 다르면(`Scripts/` vs `bin/`)
+해석기를 찾는 한 줄짜리 실행기로 묶는다 — venv 활성화에 의존하지 않는다.
+
+```bash
+PY=.venv/Scripts/python.exe; [ -x "$PY" ] || PY=.venv/bin/python
+```
+
+## ruff 스캔 범위 — `.claude` 를 제외한다
+
+ruff 는 `.gitignore` 를 읽어 `.venv/` 를 제외하지만 **`.claude/` 는 제외하지 않는다.**
+정책 서브모듈의 마크다운까지 스캔 대상에 넣으므로, 남이 쓴 문서가 우리 lint 를
+깨뜨릴 수 있다.
+
+```toml
+[tool.ruff]
+extend-exclude = [".claude"]
+```
+
+실측: 추가 전 15 파일(정책 서브모듈 `.md` 14 + `CLAUDE.md`), 추가 후 1 파일.
+
+`exclude` 가 아니라 `extend-exclude` 다 — `exclude` 로 쓰면 ruff 의 기본 제외
+목록(`.venv` `.git` 등)이 사라진다.
+
 ## 도구 선택
 
 | 자리 | 쓰는 것 | 왜 |
@@ -51,3 +74,4 @@ deploy 없음 — 배포 대상 없음
   아니다. `--strict-markers` 와 함께 테스트가 실제로 수집됐는지 개수를 본다
 - **`ruff format --check` 를 빼먹는다** — `ruff check` 만 돌리면 포맷은 안 본다
 - **Windows 줄바꿈** — `.gitattributes` 의 `eol=lf` 가 있어야 다른 PC 에서 diff 가 안 뜬다
+- **`.claude` 를 제외하지 않는다** — 정책 서브모듈 문서가 lint 대상에 들어간다 (위 참조)
